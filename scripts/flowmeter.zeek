@@ -1,5 +1,6 @@
 module FlowMeter;
 
+
 export {
     # Create an ID for the new Log stream
     redef enum Log::ID += { LOG };
@@ -65,6 +66,26 @@ export {
         fwd_last_window_size: count &log;
         bwd_last_window_size: count &log;
     };
+}
+
+global query: event(rec:Features);
+
+#global pong: event(n: int);
+
+#event ping(n: int)
+#{
+#    event pong(n);
+#}
+
+event zeek_init(){
+    Broker::subscribe("/testzeek/content");
+    Broker::listen("127.0.0.1", 9999/tcp);
+    #Broker::auto_publish("/topic/test", pong);
+}
+
+event Broker::peer_added(endpoint: Broker::EndpointInfo, msg: string)
+{
+    print "peer added", endpoint;
 }
 
 # double table to map the uid and fwd/bwd to the count holding the packet count for that uid and direction
@@ -760,6 +781,8 @@ event connection_state_remove(c: connection) {
     delete window_size[c$uid];
     delete iat_vector[c$uid];
     # write the measures of this connection to the log file
-    Log::write(FlowMeter::LOG, rec);
+    #Log::write(FlowMeter::LOG, rec);
+
+    Broker::publish("/testzeek/content", query, rec);
 }
 
